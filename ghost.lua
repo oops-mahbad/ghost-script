@@ -1,152 +1,190 @@
-local p = game:GetService("Players")
-local l = p.LocalPlayer
-local pg = l:WaitForChild("PlayerGui")
+-- Vertical Sidebar GUI (Updated Ghost)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local PhysicsService = game:GetService("PhysicsService")
 
-local ghostOn = false
-local slapOn = false
-local ffOn = false
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HRP = Character:WaitForChild("HumanoidRootPart")
 
--- Functions
-local function setGhost(s)
-	for _, pl in pairs(p:GetPlayers()) do
-		if pl ~= l and pl.Character then
-			for _, v in pairs(pl.Character:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.CanCollide = not s
-				end
-			end
-		end
-	end
-end
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    Humanoid = char:WaitForChild("Humanoid")
+    HRP = char:WaitForChild("HumanoidRootPart")
+end)
 
-local function antiSlap()
-	local char = l.Character
-	if not char then return end
-	local root = char:FindFirstChild("HumanoidRootPart")
-	if root and root.AssemblyLinearVelocity.Magnitude > 40 then
-		root.AssemblyLinearVelocity = Vector3.zero
-		root.AssemblyAngularVelocity = Vector3.zero
-	end
-end
+-- Settings
+local toggles = {
+    Ghost = false,
+    AntiSlap = false,
+    ForceField = false,
+    AntiRagdoll = false,
+    AntiFreeze = false,
+    Invisible = false,
+}
 
-local function setForceField(s)
-	local char = l.Character
-	if not char then return end
-	local ff = char:FindFirstChildOfClass("ForceField")
-	if s then
-		if not ff then
-			Instance.new("ForceField").Parent = char
-		end
-	else
-		if ff then ff:Destroy() end
-	end
-end
+local following = false
+local softMimic = false
+local targetPlayer = nil
+
+-- Setup Collision Group untuk Ghost
+pcall(function()
+    PhysicsService:RegisterCollisionGroup("GhostPlayer")
+    PhysicsService:CollisionGroupSetCollidable("GhostPlayer", "GhostPlayer", false) -- player ghost tak collide sesama sendiri
+    PhysicsService:CollisionGroupSetCollidable("GhostPlayer", "Default", true)     -- masih collide dengan map
+end)
 
 -- GUI
-local sg = Instance.new("ScreenGui", pg)
-sg.Name = "MultiGui"
-sg.ResetOnSpawn = false
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VerticalSidebar"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game:GetService("CoreGui")
 
-local f = Instance.new("Frame", sg)
-f.Size = UDim2.new(0, 200, 0, 195)
-f.Position = UDim2.new(0.5, -100, 0.1, 0)
-f.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
-Instance.new("UICorner", f).CornerRadius = UDim.new(0, 16)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "Main"
+MainFrame.Size = UDim2.new(0, 160, 0, 520)
+MainFrame.Position = UDim2.new(0, 10, 0.5, -260)
+MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
 
-local title = Instance.new("TextLabel", f)
-title.Size = UDim2.new(1, 0, 0, 28)
-title.BackgroundTransparency = 1
-title.Text = "✨ Protection"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
 
--- Button 1: Ghost
-local b1 = Instance.new("TextButton", f)
-b1.Size = UDim2.new(0, 170, 0, 36)
-b1.Position = UDim2.new(0.5, -85, 0, 40)
-b1.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b1.Text = "Ghost: OFF"
-b1.TextColor3 = Color3.new(1,1,1)
-b1.Font = Enum.Font.GothamBold
-b1.TextSize = 14
-Instance.new("UICorner", b1).CornerRadius = UDim.new(0, 10)
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(80, 80, 120)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = MainFrame
 
--- Button 2: Anti Slap
-local b2 = Instance.new("TextButton", f)
-b2.Size = UDim2.new(0, 170, 0, 36)
-b2.Position = UDim2.new(0.5, -85, 0, 85)
-b2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b2.Text = "Anti Slap: OFF"
-b2.TextColor3 = Color3.new(1,1,1)
-b2.Font = Enum.Font.GothamBold
-b2.TextSize = 14
-Instance.new("UICorner", b2).CornerRadius = UDim.new(0, 10)
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 32)
+TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
 
--- Button 3: ForceField
-local b3 = Instance.new("TextButton", f)
-b3.Size = UDim2.new(0, 170, 0, 36)
-b3.Position = UDim2.new(0.5, -85, 0, 130)
-b3.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b3.Text = "ForceField: OFF"
-b3.TextColor3 = Color3.new(1,1,1)
-b3.Font = Enum.Font.GothamBold
-b3.TextSize = 14
-Instance.new("UICorner", b3).CornerRadius = UDim.new(0, 10)
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = TitleBar
 
--- Toggle functions
-b1.MouseButton1Click:Connect(function()
-	ghostOn = not ghostOn
-	if ghostOn then
-		b1.Text = "Ghost: ON ✨"
-		b1.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
-		setGhost(true)
-	else
-		b1.Text = "Ghost: OFF"
-		b1.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-		setGhost(false)
-	end
-end)
+local TitleFix = Instance.new("Frame")
+TitleFix.Size = UDim2.new(1, 0, 0, 12)
+TitleFix.Position = UDim2.new(0, 0, 1, -12)
+TitleFix.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+TitleFix.BorderSizePixel = 0
+TitleFix.Parent = TitleBar
 
-b2.MouseButton1Click:Connect(function()
-	slapOn = not slapOn
-	if slapOn then
-		b2.Text = "Anti Slap: ON ✨"
-		b2.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
-	else
-		b2.Text = "Anti Slap: OFF"
-		b2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-	end
-end)
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -40, 1, 0)
+TitleLabel.Position = UDim2.new(0, 8, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Sidebar"
+TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TitleBar
 
-b3.MouseButton1Click:Connect(function()
-	ffOn = not ffOn
-	if ffOn then
-		b3.Text = "ForceField: ON ✨"
-		b3.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
-		setForceField(true)
-	else
-		b3.Text = "ForceField: OFF"
-		b3.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-		setForceField(false)
-	end
-end)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 28, 0, 22)
+MinimizeBtn.Position = UDim2.new(1, -32, 0.5, -11)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+MinimizeBtn.Text = "–"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 18
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Parent = TitleBar
 
--- Loop
-task.spawn(function()
-	while true do
-		if ghostOn then setGhost(true) end
-		if slapOn then antiSlap() end
-		if ffOn then setForceField(true) end
-		task.wait(0.15)
-	end
-end)
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeBtn
 
--- Auto respawn
-l.CharacterAdded:Connect(function()
-	task.wait(0.3)
-	if ghostOn then setGhost(true) end
-	if ffOn then setForceField(true) end
-end)
+-- Content
+local Content = Instance.new("ScrollingFrame")
+Content.Name = "Content"
+Content.Size = UDim2.new(1, 0, 1, -32)
+Content.Position = UDim2.new(0, 0, 0, 32)
+Content.BackgroundTransparency = 1
+Content.BorderSizePixel = 0
+Content.ScrollBarThickness = 3
+Content.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 140)
+Content.CanvasSize = UDim2.new(0, 0, 0, 0)
+Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Content.Parent = MainFrame
 
-print("3 Buttons GUI loaded")
+local UIList = Instance.new("UIListLayout")
+UIList.Padding = UDim.new(0, 6)
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Parent = Content
+
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingTop = UDim.new(0, 8)
+UIPadding.PaddingBottom = UDim.new(0, 8)
+UIPadding.PaddingLeft = UDim.new(0, 8)
+UIPadding.PaddingRight = UDim.new(0, 8)
+UIPadding.Parent = Content
+
+-- Helpers
+local function createSection(text, order)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 22)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(160, 160, 200)
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = order
+    label.Parent = Content
+end
+
+local function createToggle(name, order, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 28)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    btn.Text = name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.Gotham
+    btn.LayoutOrder = order
+    btn.Parent = Content
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            btn.Text = name .. ": ON"
+            btn.BackgroundColor3 = Color3.fromRGB(40, 120, 80)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            btn.Text = name .. ": OFF"
+            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+            btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        callback(state)
+    end)
+end
+
+local function createButton(name, order, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 28)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 75)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(230, 230, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.Gotham
+    btn.LayoutOrder = order
+    btn.Parent = Content
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim
