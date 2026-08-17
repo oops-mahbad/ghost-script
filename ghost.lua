@@ -1,12 +1,10 @@
 local p = game:GetService("Players")
-local uis = game:GetService("UserInputService")
 local l = p.LocalPlayer
 local pg = l:WaitForChild("PlayerGui")
 
 local ghostOn = false
 local slapOn = false
 local ffOn = false
-local minimized = false
 
 -- Functions
 local function setGhost(s)
@@ -50,83 +48,53 @@ sg.Name = "MultiGui"
 sg.ResetOnSpawn = false
 
 local f = Instance.new("Frame", sg)
-f.Size = UDim2.new(0, 190, 0, 185)
-f.Position = UDim2.new(0.02, 0, 0.35, 0) -- kiri sikit supaya tak cover tengah
+f.Size = UDim2.new(0, 200, 0, 195)
+f.Position = UDim2.new(0.5, -100, 0.1, 0)
 f.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
-f.Active = true
-Instance.new("UICorner", f).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", f).CornerRadius = UDim.new(0, 16)
 
 local title = Instance.new("TextLabel", f)
-title.Size = UDim2.new(1, -30, 0, 26)
-title.Position = UDim2.new(0, 8, 0, 4)
+title.Size = UDim2.new(1, 0, 0, 28)
 title.BackgroundTransparency = 1
 title.Text = "✨ Protection"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 15
-title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextSize = 18
 
--- Minimize button
-local minBtn = Instance.new("TextButton", f)
-minBtn.Size = UDim2.new(0, 24, 0, 24)
-minBtn.Position = UDim2.new(1, -28, 0, 4)
-minBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
-minBtn.Text = "–"
-minBtn.TextColor3 = Color3.new(1,1,1)
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 16
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
-
--- Buttons
+-- Button 1: Ghost
 local b1 = Instance.new("TextButton", f)
-b1.Size = UDim2.new(0, 160, 0, 34)
-b1.Position = UDim2.new(0.5, -80, 0, 38)
+b1.Size = UDim2.new(0, 170, 0, 36)
+b1.Position = UDim2.new(0.5, -85, 0, 40)
 b1.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
 b1.Text = "Ghost: OFF"
 b1.TextColor3 = Color3.new(1,1,1)
 b1.Font = Enum.Font.GothamBold
-b1.TextSize = 13
-Instance.new("UICorner", b1).CornerRadius = UDim.new(0, 9)
+b1.TextSize = 14
+Instance.new("UICorner", b1).CornerRadius = UDim.new(0, 10)
 
+-- Button 2: Anti Slap
 local b2 = Instance.new("TextButton", f)
-b2.Size = UDim2.new(0, 160, 0, 34)
-b2.Position = UDim2.new(0.5, -80, 0, 78)
+b2.Size = UDim2.new(0, 170, 0, 36)
+b2.Position = UDim2.new(0.5, -85, 0, 85)
 b2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
 b2.Text = "Anti Slap: OFF"
 b2.TextColor3 = Color3.new(1,1,1)
 b2.Font = Enum.Font.GothamBold
-b2.TextSize = 13
-Instance.new("UICorner", b2).CornerRadius = UDim.new(0, 9)
+b2.TextSize = 14
+Instance.new("UICorner", b2).CornerRadius = UDim.new(0, 10)
 
+-- Button 3: ForceField
 local b3 = Instance.new("TextButton", f)
-b3.Size = UDim2.new(0, 160, 0, 34)
-b3.Position = UDim2.new(0.5, -80, 0, 118)
+b3.Size = UDim2.new(0, 170, 0, 36)
+b3.Position = UDim2.new(0.5, -85, 0, 130)
 b3.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
 b3.Text = "ForceField: OFF"
 b3.TextColor3 = Color3.new(1,1,1)
 b3.Font = Enum.Font.GothamBold
-b3.TextSize = 13
-Instance.new("UICorner", b3).CornerRadius = UDim.new(0, 9)
+b3.TextSize = 14
+Instance.new("UICorner", b3).CornerRadius = UDim.new(0, 10)
 
--- Minimize function
-minBtn.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	if minimized then
-		f.Size = UDim2.new(0, 190, 0, 32)
-		b1.Visible = false
-		b2.Visible = false
-		b3.Visible = false
-		minBtn.Text = "+"
-	else
-		f.Size = UDim2.new(0, 190, 0, 185)
-		b1.Visible = true
-		b2.Visible = true
-		b3.Visible = true
-		minBtn.Text = "–"
-	end
-end)
-
--- Toggle buttons
+-- Toggle functions
 b1.MouseButton1Click:Connect(function()
 	ghostOn = not ghostOn
 	if ghostOn then
@@ -164,27 +132,6 @@ b3.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Drag GUI
-local dragging, dragStart, startPos
-f.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = f.Position
-	end
-end)
-f.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
-	end
-end)
-uis.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local delta = input.Position - dragStart
-		f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
 -- Loop
 task.spawn(function()
 	while true do
@@ -195,11 +142,11 @@ task.spawn(function()
 	end
 end)
 
--- Keep ON after die
+-- Auto respawn
 l.CharacterAdded:Connect(function()
-	task.wait(0.4)
+	task.wait(0.3)
 	if ghostOn then setGhost(true) end
 	if ffOn then setForceField(true) end
 end)
 
-print("Protection GUI loaded (draggable + minimize)")
+print("3 Buttons GUI loaded")
