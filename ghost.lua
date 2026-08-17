@@ -1,12 +1,12 @@
 local p = game:GetService("Players")
+local r = game:GetService("RunService")
 local l = p.LocalPlayer
+local g = false
+
 local pg = l:WaitForChild("PlayerGui")
+local currentFF = nil
 
-local ghostOn = false
-local slapOn = false
-local ffOn = false
-
--- Functions
+-- Ghost (no collide player)
 local function setGhost(s)
 	for _, pl in pairs(p:GetPlayers()) do
 		if pl ~= l and pl.Character then
@@ -19,6 +19,7 @@ local function setGhost(s)
 	end
 end
 
+-- Anti Slap
 local function antiSlap()
 	local char = l.Character
 	if not char then return end
@@ -29,105 +30,78 @@ local function antiSlap()
 	end
 end
 
+-- ForceField
 local function setForceField(s)
 	local char = l.Character
 	if not char then return end
-	local ff = char:FindFirstChildOfClass("ForceField")
+
 	if s then
-		if not ff then
-			Instance.new("ForceField").Parent = char
+		if not char:FindFirstChildOfClass("ForceField") then
+			local ff = Instance.new("ForceField")
+			ff.Parent = char
+			currentFF = ff
 		end
 	else
-		if ff then ff:Destroy() end
+		local ff = char:FindFirstChildOfClass("ForceField")
+		if ff then
+			ff:Destroy()
+		end
+		currentFF = nil
 	end
 end
 
 -- GUI
 local sg = Instance.new("ScreenGui", pg)
-sg.Name = "MultiGui"
+sg.Name = "Ghost"
 sg.ResetOnSpawn = false
 
 local f = Instance.new("Frame", sg)
-f.Size = UDim2.new(0, 200, 0, 195)
-f.Position = UDim2.new(0.5, -100, 0.1, 0)
+f.Size = UDim2.new(0, 220, 0, 115)
+f.Position = UDim2.new(0.5, -110, 0.12, 0)
 f.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
 Instance.new("UICorner", f).CornerRadius = UDim.new(0, 16)
 
-local title = Instance.new("TextLabel", f)
-title.Size = UDim2.new(1, 0, 0, 28)
-title.BackgroundTransparency = 1
-title.Text = "✨ Protection"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+local t = Instance.new("TextLabel", f)
+t.Size = UDim2.new(1, 0, 0, 28)
+t.BackgroundTransparency = 1
+t.Text = "👻 Ghost + FF + AntiSlap"
+t.TextColor3 = Color3.new(1, 1, 1)
+t.Font = Enum.Font.GothamBold
+t.TextSize = 15
 
--- Button 1: Ghost
-local b1 = Instance.new("TextButton", f)
-b1.Size = UDim2.new(0, 170, 0, 36)
-b1.Position = UDim2.new(0.5, -85, 0, 40)
-b1.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b1.Text = "Ghost: OFF"
-b1.TextColor3 = Color3.new(1,1,1)
-b1.Font = Enum.Font.GothamBold
-b1.TextSize = 14
-Instance.new("UICorner", b1).CornerRadius = UDim.new(0, 10)
+local st = Instance.new("TextLabel", f)
+st.Size = UDim2.new(1, 0, 0, 18)
+st.Position = UDim2.new(0, 0, 0, 30)
+st.BackgroundTransparency = 1
+st.Text = "OFF"
+st.TextColor3 = Color3.new(1, 1, 1)
+st.Font = Enum.Font.Gotham
+st.TextSize = 13
 
--- Button 2: Anti Slap
-local b2 = Instance.new("TextButton", f)
-b2.Size = UDim2.new(0, 170, 0, 36)
-b2.Position = UDim2.new(0.5, -85, 0, 85)
-b2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b2.Text = "Anti Slap: OFF"
-b2.TextColor3 = Color3.new(1,1,1)
-b2.Font = Enum.Font.GothamBold
-b2.TextSize = 14
-Instance.new("UICorner", b2).CornerRadius = UDim.new(0, 10)
+local b = Instance.new("TextButton", f)
+b.Size = UDim2.new(0, 170, 0, 38)
+b.Position = UDim2.new(0.5, -85, 0, 58)
+b.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+b.Text = "Turn ON ✨"
+b.TextColor3 = Color3.new(1, 1, 1)
+b.Font = Enum.Font.GothamBold
+b.TextSize = 15
+Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
 
--- Button 3: ForceField
-local b3 = Instance.new("TextButton", f)
-b3.Size = UDim2.new(0, 170, 0, 36)
-b3.Position = UDim2.new(0.5, -85, 0, 130)
-b3.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-b3.Text = "ForceField: OFF"
-b3.TextColor3 = Color3.new(1,1,1)
-b3.Font = Enum.Font.GothamBold
-b3.TextSize = 14
-Instance.new("UICorner", b3).CornerRadius = UDim.new(0, 10)
-
--- Toggle functions
-b1.MouseButton1Click:Connect(function()
-	ghostOn = not ghostOn
-	if ghostOn then
-		b1.Text = "Ghost: ON ✨"
-		b1.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
+-- Toggle
+b.MouseButton1Click:Connect(function()
+	g = not g
+	if g then
+		b.Text = "Turn OFF 💤"
+		b.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
+		st.Text = "ON ✨"
 		setGhost(true)
-	else
-		b1.Text = "Ghost: OFF"
-		b1.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-		setGhost(false)
-	end
-end)
-
-b2.MouseButton1Click:Connect(function()
-	slapOn = not slapOn
-	if slapOn then
-		b2.Text = "Anti Slap: ON ✨"
-		b2.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
-	else
-		b2.Text = "Anti Slap: OFF"
-		b2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-	end
-end)
-
-b3.MouseButton1Click:Connect(function()
-	ffOn = not ffOn
-	if ffOn then
-		b3.Text = "ForceField: ON ✨"
-		b3.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
 		setForceField(true)
 	else
-		b3.Text = "ForceField: OFF"
-		b3.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+		b.Text = "Turn ON ✨"
+		b.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+		st.Text = "OFF"
+		setGhost(false)
 		setForceField(false)
 	end
 end)
@@ -135,18 +109,22 @@ end)
 -- Loop
 task.spawn(function()
 	while true do
-		if ghostOn then setGhost(true) end
-		if slapOn then antiSlap() end
-		if ffOn then setForceField(true) end
+		if g then
+			setGhost(true)
+			antiSlap()
+			setForceField(true)
+		end
 		task.wait(0.15)
 	end
 end)
 
--- Auto respawn
+-- Auto bila respawn
 l.CharacterAdded:Connect(function()
 	task.wait(0.3)
-	if ghostOn then setGhost(true) end
-	if ffOn then setForceField(true) end
+	if g then
+		setGhost(true)
+		setForceField(true)
+	end
 end)
 
-print("3 Buttons GUI loaded")
+print("Ghost + ForceField + AntiSlap loaded")
